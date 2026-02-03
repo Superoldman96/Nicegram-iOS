@@ -113,8 +113,8 @@
       "kind" : "remoteSourceControl",
       "location" : "https://github.com/scenee/FloatingPanel",
       "state" : {
-        "revision" : "7844fac6a477a7fbca12c1d6214deb3984517f85",
-        "version" : "3.2.0"
+        "revision" : "ee2c6fee991c8b2d15c6e2db2b883065becf18e2",
+        "version" : "3.2.1"
       }
     },
     {
@@ -258,7 +258,7 @@
       "location" : "git@bitbucket.org:mobyrix/nicegram-assistant-ios.git",
       "state" : {
         "branch" : "develop",
-        "revision" : "fe5249bd770ec344c2fe84d7b29d009703409853"
+        "revision" : "8a3cc341ce9371e71ae1c0a1818c165e888cedb9"
       }
     },
     {
@@ -267,7 +267,7 @@
       "location" : "git@bitbucket.org:mobyrix/nicegram-wallet-ios.git",
       "state" : {
         "branch" : "develop",
-        "revision" : "1f7ea9dd1b7e9a91a17e1b9a4a5eed6519f413c0"
+        "revision" : "41ad484b442b566876444d1806956a0fa3bbe335"
       }
     },
     {
@@ -311,8 +311,8 @@
       "kind" : "remoteSourceControl",
       "location" : "https://github.com/rive-app/rive-ios.git",
       "state" : {
-        "revision" : "40fb81bc71de8902d45364a0709ee1bde37c10d7",
-        "version" : "6.15.0"
+        "revision" : "388cebf85b8fc2258b93f86dd3e26a30fb070fd0",
+        "version" : "6.15.1"
       }
     },
     {
@@ -322,6 +322,15 @@
       "state" : {
         "revision" : "36e79ba485e9bb4d3cd4e3318908866dac5e7b51",
         "version" : "5.21.5"
+      }
+    },
+    {
+      "identity" : "sdwebimageswiftui",
+      "kind" : "remoteSourceControl",
+      "location" : "https://github.com/SDWebImage/SDWebImageSwiftUI.git",
+      "state" : {
+        "revision" : "0e331457ca9af2f0b08bcaa138a91ffb907b004f",
+        "version" : "3.1.4"
       }
     },
     {
@@ -563,8 +572,8 @@
       "kind" : "remoteSourceControl",
       "location" : "https://github.com/trustwallet/wallet-core.git",
       "state" : {
-        "revision" : "e469abf570d9f2feae5c151bdd299985070f1863",
-        "version" : "4.5.0"
+        "revision" : "3912b213f303a024730094dfadfda67b4b5d6e3c",
+        "version" : "4.6.0"
       }
     },
     {

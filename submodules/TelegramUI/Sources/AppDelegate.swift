@@ -459,8 +459,14 @@ private class UserInterfaceStyleObserverWindow: UIWindow {
             idleTimerManager: {
                 IdleTimerManagerImpl(contextProvider: contextProvider)
             },
+            keywordsBridge: {
+                KeywordsBridgeImpl(contextProvider: contextProvider)
+            },
             remoteConfig: {
                 RemoteConfigServiceImpl.shared
+            },
+            telegramChatHistoryProvider: {
+                TelegramChatHistoryProviderImpl(contextProvider: contextProvider)
             },
             telegramChatInviteChecker: {
                 TelegramChatInviteCheckerImpl(contextProvider: contextProvider)
@@ -479,9 +485,6 @@ private class UserInterfaceStyleObserverWindow: UIWindow {
             },
             telegramMessageSender: {
                 TelegramMessageSenderImpl(contextProvider: contextProvider)
-            },
-            telegramMessagesProvider: {
-                TelegramMessagesProviderImpl(contextProvider: contextProvider)
             },
             telegramNavigator: {
                 TelegramNavigatorImpl(contextProvider: contextProvider)
@@ -2313,20 +2316,6 @@ private class UserInterfaceStyleObserverWindow: UIWindow {
         }
         
         //cancelWindowPanGestures(view: self.mainWindow.hostView.containerView)
-// Nicegram NCG-6326 Apple Speech2Text
-        let _ = (self.context.get()
-        |> take(1)
-        |> deliverOnMainQueue).start(next: { authorizedApplicationContext in
-            if let authorizedApplicationContext {
-                let setDefaultSpeech2TextSettingsUseCase = NicegramSettingsModule.shared.setDefaultSpeech2TextSettingsUseCase()
-
-                setDefaultSpeech2TextSettingsUseCase(
-                    with: authorizedApplicationContext.context.account.peerId.id._internalGetInt64Value(),
-                    isTelegramPremium: authorizedApplicationContext.context.isPremium
-                )
-            }
-        })
-//
     }
     
     func applicationWillTerminate(_ application: UIApplication) {
