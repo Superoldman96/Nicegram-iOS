@@ -47,7 +47,6 @@ import PeerInfoScreen
 import PeerInfoStoryGridScreen
 import ShareWithPeersScreen
 import ChatEmptyNode
-import UndoUI
 
 private class DetailsChatPlaceholderNode: ASDisplayNode, NavigationDetailsPlaceholderNode {
     private var presentationData: PresentationData
@@ -58,7 +57,7 @@ private class DetailsChatPlaceholderNode: ASDisplayNode, NavigationDetailsPlaceh
     
     init(context: AccountContext) {
         self.presentationData = context.sharedContext.currentPresentationData.with { $0 }
-        self.presentationInterfaceState = ChatPresentationInterfaceState(chatWallpaper: self.presentationData.chatWallpaper, theme: self.presentationData.theme, strings: self.presentationData.strings, dateTimeFormat: self.presentationData.dateTimeFormat, nameDisplayOrder: self.presentationData.nameDisplayOrder, limitsConfiguration: context.currentLimitsConfiguration.with { $0 }, fontSize: self.presentationData.chatFontSize, bubbleCorners: self.presentationData.chatBubbleCorners, accountPeerId: context.account.peerId, mode: .standard(.default), chatLocation: .peer(id: context.account.peerId), subject: nil, peerNearbyData: nil, greetingData: nil, pendingUnpinnedAllMessages: false, activeGroupCallInfo: nil, hasActiveGroupCall: false, importState: nil, threadData: nil, isGeneralThreadClosed: nil, replyMessage: nil, accountPeerColor: nil, businessIntro: nil)
+        self.presentationInterfaceState = ChatPresentationInterfaceState(chatWallpaper: self.presentationData.chatWallpaper, theme: self.presentationData.theme, strings: self.presentationData.strings, dateTimeFormat: self.presentationData.dateTimeFormat, nameDisplayOrder: self.presentationData.nameDisplayOrder, limitsConfiguration: context.currentLimitsConfiguration.with { $0 }, fontSize: self.presentationData.chatFontSize, bubbleCorners: self.presentationData.chatBubbleCorners, accountPeerId: context.account.peerId, mode: .standard(.default), chatLocation: .peer(id: context.account.peerId), subject: nil, peerNearbyData: nil, greetingData: nil, pendingUnpinnedAllMessages: false, activeGroupCallInfo: nil, hasActiveGroupCall: false, threadData: nil, isGeneralThreadClosed: nil, replyMessage: nil, accountPeerColor: nil, businessIntro: nil)
         
         self.wallpaperBackgroundNode = createWallpaperBackgroundNode(context: context, forChatDisplay: true, useSharedAnimationPhase: true)
         self.emptyNode = ChatEmptyNode(context: context, interaction: nil)
@@ -71,7 +70,7 @@ private class DetailsChatPlaceholderNode: ASDisplayNode, NavigationDetailsPlaceh
     
     func updatePresentationData(_ presentationData: PresentationData) {
         self.presentationData = presentationData
-        self.presentationInterfaceState = ChatPresentationInterfaceState(chatWallpaper: self.presentationData.chatWallpaper, theme: self.presentationData.theme, strings: self.presentationData.strings, dateTimeFormat: self.presentationData.dateTimeFormat, nameDisplayOrder: self.presentationData.nameDisplayOrder, limitsConfiguration: self.presentationInterfaceState.limitsConfiguration, fontSize: self.presentationData.chatFontSize, bubbleCorners: self.presentationData.chatBubbleCorners, accountPeerId: self.presentationInterfaceState.accountPeerId, mode: .standard(.default), chatLocation: self.presentationInterfaceState.chatLocation, subject: nil, peerNearbyData: nil, greetingData: nil, pendingUnpinnedAllMessages: false, activeGroupCallInfo: nil, hasActiveGroupCall: false, importState: nil, threadData: nil, isGeneralThreadClosed: nil, replyMessage: nil, accountPeerColor: nil, businessIntro: nil)
+        self.presentationInterfaceState = ChatPresentationInterfaceState(chatWallpaper: self.presentationData.chatWallpaper, theme: self.presentationData.theme, strings: self.presentationData.strings, dateTimeFormat: self.presentationData.dateTimeFormat, nameDisplayOrder: self.presentationData.nameDisplayOrder, limitsConfiguration: self.presentationInterfaceState.limitsConfiguration, fontSize: self.presentationData.chatFontSize, bubbleCorners: self.presentationData.chatBubbleCorners, accountPeerId: self.presentationInterfaceState.accountPeerId, mode: .standard(.default), chatLocation: self.presentationInterfaceState.chatLocation, subject: nil, peerNearbyData: nil, greetingData: nil, pendingUnpinnedAllMessages: false, activeGroupCallInfo: nil, hasActiveGroupCall: false, threadData: nil, isGeneralThreadClosed: nil, replyMessage: nil, accountPeerColor: nil, businessIntro: nil)
         
         self.wallpaperBackgroundNode.update(wallpaper: presentationData.chatWallpaper, animated: false)
     }
@@ -91,6 +90,10 @@ public final class TelegramRootController: NavigationController, TelegramRootCon
     
     // Nicegram Assistant
     public var assistantController: ViewController?
+    //
+    
+    // Nicegram, NCG-11054: assistant tab search handling
+    private var isSearchActivatedFromAssistantTab: Bool = false
     //
     
     private let context: AccountContext
@@ -317,7 +320,7 @@ public final class TelegramRootController: NavigationController, TelegramRootCon
     }
     
     public func addRootControllers(showCallsTab: Bool) {
-        let tabBarController = TabBarControllerImpl(theme: self.presentationData.theme)
+        let tabBarController = TabBarControllerImpl(theme: self.presentationData.theme, strings: self.presentationData.strings)
         tabBarController.navigationPresentation = .master
         let chatListController = self.context.sharedContext.makeChatListController(context: self.context, location: .chatList(groupId: .root), controlsHistoryPreload: true, hideNetworkActivityStatus: false, previewing: false, enableDebugActions: !GlobalExperimentalSettings.isAppStoreBuild)
         if let sharedContext = self.context.sharedContext as? SharedAccountContextImpl {
@@ -349,10 +352,32 @@ public final class TelegramRootController: NavigationController, TelegramRootCon
                 controller: AssistantTgHelper.assistantTab(),
                 accountContext: self.context
             )
+            
+            assistantController.onTabBarSearchActivated = { [weak self] in
+                guard let rootTabController = self?.rootTabController,
+                      let index = rootTabController.controllers.firstIndex(where: { $0 is PeerInfoScreenImpl }) else {
+                    return
+                }
+                
+                rootTabController.selectedIndex = index
+                let settingsController = rootTabController.controllers[index]
+                
+                (settingsController.ready.get()
+                 |> filter { $0 }
+                 |> take(1)
+                 |> ignoreValues)
+                .start(completed: {
+                    settingsController.tabBarActivateSearch()
+                    self?.isSearchActivatedFromAssistantTab = true
+                })
+            }
+            
             assistantController.tabBarItem = tabBarItem(
                 title: "Nicegram",
                 image: NGCoreUI.images.logoNicegram()
             )
+            
+            assistantController.updateTabBarSearchState(ViewController.TabBarSearchState(isActive: false), transition: .immediate)
             
             self.assistantController = assistantController
             
@@ -422,6 +447,21 @@ public final class TelegramRootController: NavigationController, TelegramRootCon
         }
         accountSettingsController.parentController = self
         controllers.append(accountSettingsController)
+        
+        // Nicegram, NCG-11054: assistant tab search handling
+        accountSettingsController.onTabBarSearchDeactivated = { [weak self] in
+            guard let self else {
+                return
+            }
+            
+            if self.isSearchActivatedFromAssistantTab {
+                isSearchActivatedFromAssistantTab = false
+                if let index = self.rootTabController?.controllers.firstIndex(where: { $0 === self.assistantController }) {
+                    self.rootTabController?.selectedIndex = index
+                }
+            }
+        }
+        //
                 
         // Nicegram Assistant
         // calculate chatListControllerIndex (instead of (controllers.count - 2))

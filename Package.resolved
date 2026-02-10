@@ -104,8 +104,8 @@
       "kind" : "remoteSourceControl",
       "location" : "https://github.com/firebase/firebase-ios-sdk.git",
       "state" : {
-        "revision" : "674d9a7ee9858207181a3dd0b42c77298c6fb71b",
-        "version" : "12.8.0"
+        "revision" : "9b3aed4fa6226125305b82d4d86c715bef250785",
+        "version" : "12.9.0"
       }
     },
     {
@@ -258,7 +258,7 @@
       "location" : "git@bitbucket.org:mobyrix/nicegram-assistant-ios.git",
       "state" : {
         "branch" : "develop",
-        "revision" : "8a3cc341ce9371e71ae1c0a1818c165e888cedb9"
+        "revision" : "10b364e2b4c52277b128fcf4b13d6e518d83c3bc"
       }
     },
     {
