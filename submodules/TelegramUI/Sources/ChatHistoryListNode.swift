@@ -1,5 +1,7 @@
 // Nicegram
+import ChatMessageNicegramAdNode
 import ChatMessageNicegramWalletTxNode
+import FeatAdsgram
 import NGAiChatUI
 import NGData
 //
@@ -237,6 +239,20 @@ private func mappedInsertEntries(context: AccountContext, chatLocation: ChatLoca
     
     return entries.map { entry -> ListViewInsertItem in
         switch entry.entry {
+            // Nicegram Ads
+            case let .nicegramAd(nicegramAd):
+                if #available(iOS 16.0, *) {
+                    let item = ChatMessageNicegramAdItem(
+                        controllerInteraction: controllerInteraction,
+                        presentationData: nicegramAd.presentationData,
+                        viewModel: nicegramAd.viewModel,
+                        viewState: nicegramAd.viewState
+                    )
+                    return ListViewInsertItem(index: entry.index, previousIndex: entry.previousIndex, item: item, directionHint: entry.directionHint)
+                } else {
+                    fatalError()
+                }
+            //
             case let .MessageEntry(message, presentationData, read, location, selection, attributes):
                 // Nicegram, changed to 'var'
                 var item: ListViewItem
@@ -306,6 +322,20 @@ private func mappedUpdateEntries(context: AccountContext, chatLocation: ChatLoca
     
     return entries.map { entry -> ListViewUpdateItem in
         switch entry.entry {
+            // Nicegram Ads
+            case let .nicegramAd(nicegramAd):
+                if #available(iOS 16.0, *) {
+                    let item = ChatMessageNicegramAdItem(
+                        controllerInteraction: controllerInteraction,
+                        presentationData: nicegramAd.presentationData,
+                        viewModel: nicegramAd.viewModel,
+                        viewState: nicegramAd.viewState
+                    )
+                    return ListViewUpdateItem(index: entry.index, previousIndex: entry.previousIndex, item: item, directionHint: entry.directionHint)
+                } else {
+                    fatalError()
+                }
+            //
             case let .MessageEntry(message, presentationData, read, location, selection, attributes):
                 // Nicegram, changed to 'var'
                 var item: ListViewItem
@@ -508,6 +538,10 @@ private var nextClientId: Int32 = 1
 
 public final class ChatHistoryListNodeImpl: ListView, ChatHistoryNode, ChatHistoryListNode {
     static let fixedAdMessageStableId: UInt32 = UInt32.max - 5000
+    
+    // Nicegram
+    let nicegramContext: ChatNicegramContext?
+    //
     
     public let context: AccountContext
     private let systemStyle: ItemListSystemStyle
@@ -769,6 +803,10 @@ public final class ChatHistoryListNodeImpl: ListView, ChatHistoryNode, ChatHisto
     private var allAdMessages: (fixed: Message?, opportunistic: [Message], version: Int) = (nil, [], 0) {
         didSet {
             self.allAdMessagesPromise.set(.single(self.allAdMessages))
+            
+            // Nicegram
+            self.nicegramContext?.update(hasTelegramMessageAd: self.allAdMessages.fixed != nil)
+            //
         }
     }
     private let allAdMessagesPromise = Promise<(fixed: Message?, opportunistic: [Message], version: Int)>((nil, [], 0))
@@ -801,6 +839,9 @@ public final class ChatHistoryListNodeImpl: ListView, ChatHistoryNode, ChatHisto
     private let initTimestamp: Double
     
     public init(
+        // Nicegram
+        nicegramContext: ChatNicegramContext? = nil,
+        //
         context: AccountContext,
         updatedPresentationData: (initial: PresentationData, signal: Signal<PresentationData, NoError>),
         systemStyle: ItemListSystemStyle = .legacy,
@@ -827,6 +868,9 @@ public final class ChatHistoryListNodeImpl: ListView, ChatHistoryNode, ChatHisto
             tag = .tag(.pinned)
         }
         
+        // Nicegram
+        self.nicegramContext = nicegramContext
+        //
         self.context = context
         self.systemStyle = systemStyle
         self.chatLocation = chatLocation
@@ -1859,6 +1903,32 @@ public final class ChatHistoryListNodeImpl: ListView, ChatHistoryNode, ChatHisto
                 return historyViewUpdateValue
             }
         }
+
+        // Nicegram Ads
+        let ngMessageAdSignal: Signal<ChatHistoryEntry.NicegramAd?, NoError>
+        if let nicegramContext {
+            let viewModel = nicegramContext.ads.messageAdViewModel
+            ngMessageAdSignal = viewModel.$viewState
+                .combineLatestThreadSafe(
+                    self.chatPresentationDataPromise.get().toPublisher()
+                )
+                .map { state, presentationData in
+                    if case .banner = state {
+                        ChatHistoryEntry.NicegramAd(
+                            presentationData: presentationData,
+                            viewModel: viewModel,
+                            viewState: state
+                        )
+                    } else {
+                        nil
+                    }
+                }
+                .toSignal()
+                .skipError()
+        } else {
+            ngMessageAdSignal = .single(nil)
+        }
+        //
                 
         let startTime = CFAbsoluteTimeGetCurrent()
         var measure_isFirstTime = true
@@ -1889,7 +1959,10 @@ public final class ChatHistoryListNodeImpl: ListView, ChatHistoryNode, ChatHisto
             chatThemes |> debug_measureTimeToFirstEvent(label: "chatHistoryNode_chatThemes"),
             deviceContactsNumbers |> debug_measureTimeToFirstEvent(label: "chatHistoryNode_deviceContactsNumbers"),
             contentSettings |> debug_measureTimeToFirstEvent(label: "chatHistoryNode_contentSettings"),
-        ) |> debug_measureTimeToFirstEvent(label: "chatHistoryNode_firstChatHistoryTransition")).startStrict(next: { [weak self] update, chatPresentationData, selectedMessages, updatingMedia, networkType, preferredStoryHighQuality, animatedEmojiStickers, additionalAnimatedEmojiStickers, customChannelDiscussionReadState, customThreadOutgoingReadState, availableReactions, availableMessageEffects, savedMessageTags, defaultReaction, accountPeer, suggestAudioTranscription, promises, topicAuthorId, translationState, maxReadStoryId, recommendedChannels, audioTranscriptionTrial, chatThemes, deviceContactsNumbers, contentSettings in
+            // Nicegram Ads
+            ngMessageAdSignal,
+            //
+        ) |> debug_measureTimeToFirstEvent(label: "chatHistoryNode_firstChatHistoryTransition")).startStrict(next: { [weak self] update, chatPresentationData, selectedMessages, updatingMedia, networkType, preferredStoryHighQuality, animatedEmojiStickers, additionalAnimatedEmojiStickers, customChannelDiscussionReadState, customThreadOutgoingReadState, availableReactions, availableMessageEffects, savedMessageTags, defaultReaction, accountPeer, suggestAudioTranscription, promises, topicAuthorId, translationState, maxReadStoryId, recommendedChannels, audioTranscriptionTrial, chatThemes, deviceContactsNumbers, contentSettings, ngMessageAd in
             let (historyAppearsCleared, pendingUnpinnedAllMessages, pendingRemovedMessages, currentlyPlayingMessageIdAndType, scrollToMessageId, chatHasBots, allAdMessages) = promises
             
             if measure_isFirstTime {
@@ -2096,12 +2169,18 @@ public final class ChatHistoryListNodeImpl: ListView, ChatHistoryNode, ChatHisto
                 var isCopyProtectionEnabled: Bool = data.initialData?.peer?.isCopyProtectionEnabled ?? false
                 for entry in view.additionalData {
                     if case let .peer(_, maybePeer) = entry, let peer = maybePeer {
-                        isCopyProtectionEnabled = peer.isCopyProtectionEnabled
+                        if !isCopyProtectionEnabled {
+                            isCopyProtectionEnabled = peer.isCopyProtectionEnabled
+                        }
                         if let channel = peer as? TelegramChannel {
                             autoTranslate = channel.flags.contains(.autoTranslateEnabled)
                             if let boostLevel = channel.approximateBoostLevel, boostLevel >= premiumConfiguration.minGroupAudioTranscriptionLevel {
                                 audioTranscriptionProvidedByBoost = true
                             }
+                        }
+                    } else if case let .cachedPeerData(_, cachedData) = entry, let cachedUserData = cachedData as? CachedUserData {
+                        if !isCopyProtectionEnabled {
+                            isCopyProtectionEnabled = cachedUserData.flags.contains(.copyProtectionEnabled) || cachedUserData.flags.contains(.myCopyProtectionEnabled)
                         }
                     }
                 }
@@ -2163,8 +2242,11 @@ public final class ChatHistoryListNodeImpl: ListView, ChatHistoryNode, ChatHisto
                     adMessage: allAdMessages.fixed,
                     dynamicAdMessages: allAdMessages.opportunistic
                 )
-                // Nicegram ATT
-                filteredEntries = nicegramMapChatHistoryEntries(filteredEntries)
+                // Nicegram
+                filteredEntries = nicegramMapChatHistoryEntries(
+                    entries: filteredEntries,
+                    ngMessageAd: ngMessageAd
+                )
                 //
                 
                 let lastHeaderId = filteredEntries.last.flatMap { listMessageDateHeaderId(timestamp: $0.index.timestamp) } ?? 0
@@ -2378,8 +2460,12 @@ public final class ChatHistoryListNodeImpl: ListView, ChatHistoryNode, ChatHisto
                 }
                 
                 var keyboardButtonsMessage = view.topTaggedMessages.first
-                if keyboardButtonsMessage != nil && keyboardButtonsMessage?.threadId != chatLocation.threadId {
-                    keyboardButtonsMessage = nil
+                if let keyboardButtonsMessageValue = keyboardButtonsMessage {
+                    if keyboardButtonsMessageValue.threadId != chatLocation.threadId {
+                        if chatLocation.threadId != nil {
+                            keyboardButtonsMessage = nil
+                        }
+                    }
                 }
                 if let keyboardButtonsMessageValue = keyboardButtonsMessage, keyboardButtonsMessageValue.isRestricted(platform: "ios", contentSettings: context.currentContentSettings.with({ $0 })) {
                     keyboardButtonsMessage = nil
@@ -3958,7 +4044,9 @@ public final class ChatHistoryListNodeImpl: ListView, ChatHistoryNode, ChatHisto
                     loadState = .messages
                 } else if let historyView = strongSelf.historyView {
                     if historyView.filteredEntries.isEmpty {
-                        if let firstEntry = historyView.originalView.entries.first {
+                        if historyView.originalView.isLoading {
+                            loadState = .loading(false)
+                        } else if let firstEntry = historyView.originalView.entries.first {
                             var emptyType = ChatHistoryNodeLoadState.EmptyType.generic
                             for media in firstEntry.message.media {
                                 if let action = media as? TelegramMediaAction {

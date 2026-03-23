@@ -484,7 +484,12 @@ func chatContextMenuItems(context: AccountContext, peerId: PeerId, promoInfo: Ch
                             let messagesCount = 100
                             items.append(.action(ContextMenuActionItem(
                                 text: FeatAiChatAnalysis.strings.copyLastMessages(messagesCount),
-                                icon: { _ in nil },
+                                icon: { theme in
+                                    generateTintedImage(
+                                        image: UIImage(bundleImageName: "Chat/Context Menu/Copy"),
+                                        color: theme.contextMenu.primaryColor
+                                    )
+                                },
                                 action: { _, f in
                                     copySourceMessages(messagesCount)
                                     f(.default)
@@ -495,7 +500,12 @@ func chatContextMenuItems(context: AccountContext, peerId: PeerId, promoInfo: Ch
                             if unreadCount > 0 {
                                 items.append(.action(ContextMenuActionItem(
                                     text: FeatAiChatAnalysis.strings.copyUnreadMessages(),
-                                    icon: { _ in nil },
+                                    icon: { theme in
+                                        generateTintedImage(
+                                            image: UIImage(bundleImageName: "Chat/Context Menu/Copy"),
+                                            color: theme.contextMenu.primaryColor
+                                        )
+                                    },
                                     action: { _, f in
                                         copySourceMessages(unreadCount)
                                         f(.default)
@@ -514,7 +524,7 @@ func chatContextMenuItems(context: AccountContext, peerId: PeerId, promoInfo: Ch
                             })))
                         } else if !isForum {
                             var canMarkAsUnread = true
-                            if peerId.namespace == Namespaces.Peer.CloudChannel && !joined {
+                            if peerId.namespace == Namespaces.Peer.CloudChannel && joined {
                                 canMarkAsUnread = false
                             }
                             if canMarkAsUnread {
@@ -732,7 +742,7 @@ func chatContextMenuItems(context: AccountContext, peerId: PeerId, promoInfo: Ch
                                         }
                                         
                                         joinChannelDisposable.set((createSignal
-                                                                   |> deliverOnMainQueue).start(next: { _ in
+                                        |> deliverOnMainQueue).start(next: { _ in
                                         }, error: { _ in
                                             if let chatListController = chatListController {
                                                 let presentationData = context.sharedContext.currentPresentationData.with { $0 }
@@ -1180,6 +1190,7 @@ public func chatForumTopicMenuItems(context: AccountContext, peerId: PeerId, thr
                                     })
                                 ])
                             ])
+                            chatListController.view.endEditing(true)
                             chatListController.present(actionSheet, in: .window(.root))
                         }
                     })

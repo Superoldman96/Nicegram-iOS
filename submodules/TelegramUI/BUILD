@@ -10,12 +10,10 @@ NGDEPS = [
     "//Nicegram/NGAppCache:NGAppCache",
     "//Nicegram/NGEnv:NGEnv",
     "//Nicegram/NGQuickReplies:NGQuickReplies",
-    "//Nicegram/NGRemoteConfig:NGRemoteConfig",
     "//Nicegram/NGDataSharing:NGDataSharing",
     "//Nicegram/NGModels:NGModels",
     "//Nicegram/NGWrap:NGWrap",
     "//Nicegram/NGKeywords:NGKeywords",
-    "@swiftpkg_firebase_ios_sdk//:FirebaseCrashlytics",
     "@swiftpkg_nicegram_assistant_ios//:FeatAccountBackup",
     "@swiftpkg_nicegram_assistant_ios//:FeatAiShortcuts",
     "@swiftpkg_nicegram_assistant_ios//:FeatAiVoiceAssistant",
@@ -30,7 +28,6 @@ NGDEPS = [
     "@swiftpkg_nicegram_assistant_ios//:FeatSpyOnFriends",
     "@swiftpkg_nicegram_assistant_ios//:FeatTgChatButton",
     "@swiftpkg_nicegram_assistant_ios//:NGEntryPoint",
-    "@swiftpkg_nicegram_assistant_ios//:_NGRemoteConfig",
 ]
 
 load(
@@ -353,7 +350,6 @@ swift_library(
         "//submodules/TelegramUI/Components/ChatTextInputMediaRecordingButton",
         "//submodules/TelegramUI/Components/ChatSendButtonRadialStatusNode",
         "//submodules/TelegramUI/Components/LegacyInstantVideoController",
-        "//submodules/TelegramUI/Components/FullScreenEffectView",
         "//submodules/TelegramUI/Components/ShareWithPeersScreen",
         "//submodules/TelegramUI/Components/PeerInfo/PeerInfoVisualMediaPaneNode",
         "//submodules/TelegramUI/Components/PeerInfo/PeerInfoStoryGridScreen",
@@ -435,6 +431,7 @@ swift_library(
         "//submodules/TelegramUI/Components/Chat/ChatMessageWallpaperBubbleContentNode",
         "//submodules/TelegramUI/Components/Chat/ChatMessageGiftBubbleContentNode",
         "//submodules/TelegramUI/Components/Chat/ChatMessageGiftOfferBubbleContentNode",
+        "//submodules/TelegramUI/Components/Chat/ChatMessageDisableCopyProtectionBubbleContentNode",
         "//submodules/TelegramUI/Components/Chat/ChatMessageGiveawayBubbleContentNode",
         "//submodules/TelegramUI/Components/Chat/ChatMessageBubbleItemNode",
         "//submodules/TelegramUI/Components/Chat/ChatRecentActionsController",
@@ -550,6 +547,10 @@ swift_library(
         "//submodules/TelegramUI/Components/ProxyServerPreviewScreen",
         "//submodules/TelegramUI/Components/ContextControllerImpl",
         "//submodules/TelegramUI/Components/AuthConfirmationScreen",
+        "//submodules/TelegramUI/Components/ChatParticipantRightsScreen",
+        "//submodules/TelegramUI/Components/PeerInfo/PeerCopyProtectionInfoScreen",
+        "//submodules/TelegramUI/Components/Chat/ChatRankInfoScreen",
+        "//submodules/TelegramUI/Components/RankChatPreviewItem",
     ] + select({
         "@build_bazel_rules_apple//apple:ios_arm64": appcenter_targets,
         "//build-system:ios_sim_arm64": [],

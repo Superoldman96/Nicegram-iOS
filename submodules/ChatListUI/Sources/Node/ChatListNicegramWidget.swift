@@ -52,6 +52,7 @@ final class ChatListNicegramWidgetView: UIView {}
 
 @available(iOS 16.0, *)
 final class ChatListNicegramWidgetNode: ListViewItemNode {
+    private let widgetViewModel: ChatListWidgetViewModel
     private let widgetNode: ASDisplayNode
     
     @MainActor
@@ -64,6 +65,7 @@ final class ChatListNicegramWidgetNode: ListViewItemNode {
             make.edges.equalToSuperview()
         }
         
+        self.widgetViewModel = ChatListWidgetModule.shared.chatListWidgetViewModel()
         self.widgetNode = ASDisplayNode { widgetContainer }
         
         super.init(layerBacked: false, rotated: false, seeThrough: false)
@@ -79,6 +81,14 @@ final class ChatListNicegramWidgetNode: ListViewItemNode {
     
     func asyncLayout() -> (_ item: ChatListNicegramWidget, _ params: ListViewItemLayoutParams, _ isLast: Bool) -> (ListViewItemNodeLayout, () -> Void) {
         return { [weak self] item, params, last in
+            let horizontalInset = 10.0
+            self?.widgetViewModel.set(
+                layoutParams: .init(
+                    leadingInset: params.leftInset + horizontalInset,
+                    trailingInset: params.rightInset + horizontalInset
+                )
+            )
+            
             let size = CGSize(
                 width: params.width,
                 height: item.height

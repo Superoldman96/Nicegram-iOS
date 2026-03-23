@@ -1571,6 +1571,25 @@ func peerInfoScreenData(
                     availablePanes = nil
                 }
                 
+                if #available(iOS 15.0, *),
+                   let user = peerView.peers[userPeerId] as? TelegramUser,
+                   !(user.botInfo != nil && !user.id.isVerificationCodes), // checking is bot
+                   user.id.id._internalGetInt64Value() != 777000 { //checking for telegram login bot
+                    // Nicegram NCG-7303 Spy on friends
+                    if availablePanes != nil {
+                        availablePanes?.insert(.spyOnFriends, at: 0)
+                    } else {
+                        availablePanes = [.spyOnFriends]
+                    }
+                    //
+                    
+                    // Nicegram Nft Sticker
+                    if #available(iOS 16.0, *), isNftStickerEnabled {
+                        availablePanes?.insert(.nftSticker, at: 1)
+                    }
+                    //
+                }
+                
                 if var currentAvailablePanes = availablePanes, let cachedData = peerView.cachedData as? CachedUserData, let mainProfileTab = cachedData.mainProfileTab {
                     let mainTabKey = PeerInfoPaneKey(tab: mainProfileTab)
                     if currentAvailablePanes.contains(mainTabKey) && currentAvailablePanes.first != mainTabKey {
@@ -1607,26 +1626,7 @@ func peerInfoScreenData(
                         hasWatchApp: false,
                         enableQRLogin: false)
                 }
-
-                if #available(iOS 15.0, *),
-                   let user = peer as? TelegramUser,
-                   !(user.botInfo != nil && !user.id.isVerificationCodes), // checking is bot
-                   user.id.id._internalGetInt64Value() != 777000 { //checking for telegram login bot                    
-                    // Nicegram NCG-7303 Spy on friends
-                    if availablePanes != nil {
-                        availablePanes?.insert(.spyOnFriends, at: 0)
-                    } else {
-                        availablePanes = [.spyOnFriends]
-                    }
-                    //
-
-                    // Nicegram Nft Sticker
-                    if #available(iOS 16.0, *), isNftStickerEnabled {
-                        availablePanes?.insert(.nftSticker, at: 1)
-                    }
-                    //
-                }
-
+                
                 return PeerInfoScreenData(
                     peer: peer,
                     chatPeer: peerView.peers[peerId],
@@ -2277,6 +2277,16 @@ func peerInfoScreenData(
     //
 }
 
+func peerInfoIsCopyProtected(data: PeerInfoScreenData) -> Bool {
+    var isCopyProtected = false
+    if let cachedUserData = data.cachedData as? CachedUserData, cachedUserData.flags.contains(.copyProtectionEnabled) || cachedUserData.flags.contains(.myCopyProtectionEnabled) {
+        isCopyProtected = true
+    } else if let peer = data.peer, peer.isCopyProtectionEnabled {
+        isCopyProtected = true
+    }
+    return isCopyProtected
+}
+
 func canEditPeerInfo(context: AccountContext, peer: Peer?, chatLocation: ChatLocation, threadData: MessageHistoryThreadData?) -> Bool {
     if context.account.peerId == peer?.id {
         return true
@@ -2323,6 +2333,7 @@ struct PeerInfoMemberActions: OptionSet {
     static let restrict = PeerInfoMemberActions(rawValue: 1 << 0)
     static let promote = PeerInfoMemberActions(rawValue: 1 << 1)
     static let logout = PeerInfoMemberActions(rawValue: 1 << 2)
+    static let editRank = PeerInfoMemberActions(rawValue: 1 << 3)
 }
 
 func availableActionsForMemberOfPeer(accountPeerId: PeerId, peer: Peer?, member: PeerInfoMember) -> PeerInfoMemberActions {
@@ -2330,13 +2341,24 @@ func availableActionsForMemberOfPeer(accountPeerId: PeerId, peer: Peer?, member:
     
     if peer == nil {
         result.insert(.logout)
-    } else if member.id != accountPeerId {
+    } else if member.id == accountPeerId {
+        if let channel = peer as? TelegramChannel {
+            if channel.hasPermission(.editRank) {
+                result.insert(.editRank)
+            }
+        } else if let group = peer as? TelegramGroup {
+            if !group.hasBannedPermission(.banEditRank) {
+                result.insert(.editRank)
+            }
+        }
+    } else {
         if let channel = peer as? TelegramChannel {
             if channel.flags.contains(.isCreator) {
                 if !channel.flags.contains(.isGigagroup) {
                     result.insert(.restrict)
                 }
                 result.insert(.promote)
+                result.insert(.editRank)
             } else {
                 switch member {
                 case let .channelMember(channelMember, _):
@@ -2352,6 +2374,9 @@ func availableActionsForMemberOfPeer(accountPeerId: PeerId, peer: Peer?, member:
                                 if channel.hasPermission(.addAdmins) {
                                     result.insert(.promote)
                                 }
+                                if channel.hasPermission(.manageRanks) {
+                                    result.insert(.editRank)
+                                }
                             }
                         } else {
                             if channel.hasPermission(.banMembers) && !channel.flags.contains(.isGigagroup) {
@@ -2359,6 +2384,9 @@ func availableActionsForMemberOfPeer(accountPeerId: PeerId, peer: Peer?, member:
                             }
                             if channel.hasPermission(.addAdmins) {
                                 result.insert(.promote)
+                            }
+                            if channel.hasPermission(.manageRanks) {
+                                result.insert(.editRank)
                             }
                         }
                     }
@@ -2373,12 +2401,14 @@ func availableActionsForMemberOfPeer(accountPeerId: PeerId, peer: Peer?, member:
             case .creator:
                 result.insert(.restrict)
                 result.insert(.promote)
+                result.insert(.editRank)
             case .admin:
                 switch member {
-                case let .legacyGroupMember(_, _, invitedBy, _, _):
+                case let .legacyGroupMember(_, _, invitedBy, _, _, _):
                     result.insert(.restrict)
                     if invitedBy == accountPeerId {
                         result.insert(.promote)
+                        result.insert(.editRank)
                     }
                 case .channelMember:
                     break
@@ -2387,9 +2417,10 @@ func availableActionsForMemberOfPeer(accountPeerId: PeerId, peer: Peer?, member:
                 }
             case .member:
                 switch member {
-                case let .legacyGroupMember(_, _, invitedBy, _, _):
+                case let .legacyGroupMember(_, _, invitedBy, _, _, _):
                     if invitedBy == accountPeerId {
                         result.insert(.restrict)
+                        result.insert(.editRank)
                     }
                 case .channelMember:
                     break

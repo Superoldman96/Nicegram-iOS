@@ -587,6 +587,12 @@ store_signin_fragment = """
 """
 signin_fragment = store_signin_fragment if telegram_bundle_id in store_bundle_ids else ""
 
+official_background_gpu_fragment = """
+<key>com.apple.developer.background-tasks.continued-processing.gpu</key>
+<true/>
+"""
+background_gpu_fragment = official_background_gpu_fragment if telegram_bundle_id == "ph.telegra.Telegraph" else ""
+
 # Nicegram, keychain_access_groups_fragment
 keychain_access_groups_fragment = """
     <key>keychain-access-groups</key>
@@ -613,6 +619,7 @@ plist_fragment(
         communication_notifications_fragment,
         notification_filtering_fragment,
         signin_fragment,
+        background_gpu_fragment,
         # Nicegram, keychain_access_groups_fragment
         keychain_access_groups_fragment
     ])
@@ -1966,6 +1973,7 @@ plist_fragment(
     <array>
         <string>{telegram_bundle_id}.refresh</string>
         <string>{telegram_bundle_id}.cleanup</string>
+        <string>{telegram_bundle_id}.upload.*</string>
     </array>
     <key>CFBundleAllowMixedLocalizations</key>
     <true/>
@@ -2050,6 +2058,8 @@ plist_fragment(
     <string>You can use Siri to send messages.</string>
     <key>NSSpeechRecognitionUsageDescription</key>
     <string>We need this to transcribe audio messages on your request.</string>
+    <key>NSUserTrackingUsageDescription</key>
+    <string>We would like to access your advertising ID in order to accurately identify the source of app installation and provide you with a high quality service</string>
     <key>NSUserActivityTypes</key>
     <array>
         <string>INSendMessageIntent</string>
@@ -2167,6 +2177,17 @@ xcode_provisioning_profile(
    provisioning_profile = ":Telegram_local_profile",
 )
 
+# Nicegram, required for Adjust SDK
+objc_library(
+    name = "OptionalSystemFrameworks",
+    weak_sdk_frameworks = [
+        "AdServices",
+        "AdSupport",
+        "AppTrackingTransparency",
+        "StoreKit",
+    ]
+)
+
 ios_application(
     name = "Telegram",
     bundle_id = "{telegram_bundle_id}".format(
@@ -2218,6 +2239,8 @@ ios_application(
     deps = [
         ":Main",
         ":Lib",
+        # Nicegram
+        ":OptionalSystemFrameworks",
     ],
     visibility = ["//visibility:public"],
 )

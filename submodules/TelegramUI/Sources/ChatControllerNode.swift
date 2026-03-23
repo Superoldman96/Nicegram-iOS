@@ -9,7 +9,6 @@ import FeatTgChatButton
 import NGAiChatUI
 import NGAppCache
 import NGData
-import NGRemoteConfig
 import NGStrings
 import NGUI
 import NGUtils
@@ -231,6 +230,10 @@ class ChatControllerNode: ASDisplayNode, ASScrollViewDelegate {
     private var didDisplayEmptyGreeting = false
     private var validEmptyNodeLayout: (CGSize, UIEdgeInsets, CGFloat, CGFloat)?
     var restrictedNode: ChatRecentActionsEmptyNode?
+
+    // Nicegram
+    let nicegramContext: ChatNicegramContext
+    //
     
     // Nicegram SensitiveContentAccess
     let restrictedChatSupplementViewModel: RestrictedChatSupplementViewModel
@@ -500,7 +503,11 @@ class ChatControllerNode: ASDisplayNode, ASScrollViewDelegate {
     
     private var onLayoutCompletions: [(ContainedViewLayoutTransition) -> Void] = []
 
-    init(context: AccountContext, chatLocation: ChatLocation, chatLocationContextHolder: Atomic<ChatLocationContextHolder?>, subject: ChatControllerSubject?, controllerInteraction: ChatControllerInteraction, chatPresentationInterfaceState: ChatPresentationInterfaceState, automaticMediaDownloadSettings: MediaAutoDownloadSettings, navigationBar: NavigationBar?, statusBar: StatusBar?, backgroundNode: WallpaperBackgroundNode, controller: ChatControllerImpl?) {
+    // Nicegram, add nicegramContext
+    init(nicegramContext: ChatNicegramContext, context: AccountContext, chatLocation: ChatLocation, chatLocationContextHolder: Atomic<ChatLocationContextHolder?>, subject: ChatControllerSubject?, controllerInteraction: ChatControllerInteraction, chatPresentationInterfaceState: ChatPresentationInterfaceState, automaticMediaDownloadSettings: MediaAutoDownloadSettings, navigationBar: NavigationBar?, statusBar: StatusBar?, backgroundNode: WallpaperBackgroundNode, controller: ChatControllerImpl?) {
+        // Nicegram
+        self.nicegramContext = nicegramContext
+        //
         self.context = context
         self.chatLocation = chatLocation
         self.chatLocationContextHolder = chatLocationContextHolder
@@ -806,7 +813,8 @@ class ChatControllerNode: ASDisplayNode, ASScrollViewDelegate {
         }
 
         var getMessageTransitionNode: (() -> ChatMessageTransitionNodeImpl?)?
-        self.historyNode = ChatHistoryListNodeImpl(context: context, updatedPresentationData: controller?.updatedPresentationData ?? (context.sharedContext.currentPresentationData.with({ $0 }), context.sharedContext.presentationData), chatLocation: chatLocation, chatLocationContextHolder: chatLocationContextHolder, adMessagesContext: self.adMessagesContext, tag: nil, source: source, subject: subject, controllerInteraction: controllerInteraction, selectedMessages: self.selectedMessagesPromise.get(), rotated: historyNodeRotated, isChatPreview: isChatPreview, messageTransitionNode: {
+        // Nicegram, add nicegramContext
+        self.historyNode = ChatHistoryListNodeImpl(nicegramContext: nicegramContext, context: context, updatedPresentationData: controller?.updatedPresentationData ?? (context.sharedContext.currentPresentationData.with({ $0 }), context.sharedContext.presentationData), chatLocation: chatLocation, chatLocationContextHolder: chatLocationContextHolder, adMessagesContext: self.adMessagesContext, tag: nil, source: source, subject: subject, controllerInteraction: controllerInteraction, selectedMessages: self.selectedMessagesPromise.get(), rotated: historyNodeRotated, isChatPreview: isChatPreview, messageTransitionNode: {
             return getMessageTransitionNode?()
         })
 
@@ -892,7 +900,7 @@ class ChatControllerNode: ASDisplayNode, ASScrollViewDelegate {
         }
         
         assert(Queue.mainQueue().isCurrent())
-                
+        
         self.setupHistoryNode()
         
         self.interactiveEmojisDisposable = (self.context.account.postbox.preferencesView(keys: [PreferencesKeys.appConfiguration])
@@ -957,11 +965,21 @@ class ChatControllerNode: ASDisplayNode, ASScrollViewDelegate {
         }
         //
         
+        // Nicegram Ads
         // Nicegram SensitiveContentAccess
+        let ngHeaderAdViewModel = nicegramContext.ads.headerAdViewModel
+        let headerAdHeightPublisher = ngHeaderAdViewModel.$viewState
+            .map { [ngHeaderAdViewModel] state in
+                ngHeaderAdViewModel.viewHeight(state)
+            }
+        
         restrictedChatSupplementViewModel.$viewState
-            .removeDuplicates()
+            .combineLatestThreadSafe(
+                headerAdHeightPublisher
+            )
+            .removeDuplicates(by: ==)
             .receive(on: DispatchQueue.main)
-            .sink { [weak self] state in
+            .sink { [weak self] _ in
                 self?.requestLayout(.immediate)
             }
             .store(in: &cancellables)
@@ -1410,7 +1428,11 @@ class ChatControllerNode: ASDisplayNode, ASScrollViewDelegate {
         
         let isSecret = self.chatPresentationInterfaceState.copyProtectionEnabled || self.chatLocation.peerId?.namespace == Namespaces.Peer.SecretChat || self.chatLocation.peerId?.isVerificationCodes == true
         if self.historyNodeContainer.isSecret != isSecret {
+            #if DEBUG
+            self.historyNodeContainer.isSecret = false
+            #else
             self.historyNodeContainer.isSecret = isSecret
+            #endif
             setLayerDisableScreenshots(self.titleAccessoryPanelContainer.layer, isSecret)
         }
 
@@ -1626,10 +1648,18 @@ class ChatControllerNode: ASDisplayNode, ASScrollViewDelegate {
         self.containerLayoutAndNavigationBarHeight = (layout, navigationBarHeight)
         
         var headerPanels: [HeaderPanelContainerComponent.Panel] = []
+        
+        if let headerTopicsPanel = headerTopicsPanelForChatPresentationInterfaceState(self.chatPresentationInterfaceState, context: self.context, controllerInteraction: self.controllerInteraction, interfaceInteraction: self.interfaceInteraction,  force: false) {
+            headerPanels.append(HeaderPanelContainerComponent.Panel(
+                key: "topics",
+                orderIndex: 0,
+                component: headerTopicsPanel
+            ))
+        }
         if let mediaPlayback = self.controller?.globalControlPanelsContextState?.mediaPlayback {
             headerPanels.append(HeaderPanelContainerComponent.Panel(
                 key: "media",
-                orderIndex: 0,
+                orderIndex: 1,
                 component: AnyComponent(MediaPlaybackHeaderPanelComponent(
                     context: self.context,
                     theme: self.chatPresentationInterfaceState.theme,
@@ -1644,7 +1674,7 @@ class ChatControllerNode: ASDisplayNode, ASScrollViewDelegate {
         if let liveLocation = self.controller?.globalControlPanelsContextState?.liveLocation {
             headerPanels.append(HeaderPanelContainerComponent.Panel(
                 key: "liveLocation",
-                orderIndex: 1,
+                orderIndex: 2,
                 component: AnyComponent(LiveLocationHeaderPanelComponent(
                     context: self.context,
                     theme: self.chatPresentationInterfaceState.theme,
@@ -1659,7 +1689,7 @@ class ChatControllerNode: ASDisplayNode, ASScrollViewDelegate {
         if let groupCall = self.controller?.globalControlPanelsContextState?.groupCall {
             headerPanels.append(HeaderPanelContainerComponent.Panel(
                 key: "groupCall",
-                orderIndex: 2,
+                orderIndex: 3,
                 component: AnyComponent(GroupCallHeaderPanelComponent(
                     context: self.context,
                     theme: self.chatPresentationInterfaceState.theme,
@@ -1730,6 +1760,28 @@ class ChatControllerNode: ASDisplayNode, ASScrollViewDelegate {
                 }
             }
         }
+        // Nicegram
+        self.nicegramContext.update(hasTelegramHeaderAd: displayAdPanel)
+
+        let ngHeaderAdViewModel = nicegramContext.ads.headerAdViewModel
+        let ngHeaderAdHeight = ngHeaderAdViewModel.viewHeight(ngHeaderAdViewModel.viewState)
+        let showNgHeaderAd = ngHeaderAdHeight > 0
+        if #available(iOS 16.0, *), showNgHeaderAd, !displayAdPanel {
+            headerPanels.append(
+                HeaderPanelContainerComponent.Panel(
+                    key: "nicegram-ad",
+                    orderIndex: 2,
+                    component: AnyComponent(
+                        NicegramChatHeaderAdComponent(
+                            viewModel: ngHeaderAdViewModel,
+                            height: ngHeaderAdHeight
+                        )
+                    )
+                )
+            )
+        }
+        //
+
         if displayAdPanel, let adMessage = self.chatPresentationInterfaceState.adMessage {
             headerPanels.append(HeaderPanelContainerComponent.Panel(
                 key: "ad",
@@ -2881,29 +2933,16 @@ class ChatControllerNode: ASDisplayNode, ASScrollViewDelegate {
                 }
                 if immediatelyLayoutFloatingTopicsNodeAndAnimateAppearance {
                     floatingTopicsPanelView.frame = floatingTopicsPanelFrame
+                    transition.animatePositionAdditive(layer: floatingTopicsPanelView.layer, offset: CGPoint(x: -100.0 - floatingTopicsPanelFrame.minX, y: 0.0))
                 } else {
                     transition.updateFrame(view: floatingTopicsPanelView, frame: floatingTopicsPanelFrame)
                 }
             }
         }
         if let dismissedFloatingTopicsPanel, let dismissedFloatingTopicsPanelView = dismissedFloatingTopicsPanel.view.view {
-            /*let dismissedLeftPanelSize = dismissedLeftPanel.view.update(
-                transition: ComponentTransition(transition),
-                component: dismissedLeftPanel.component.component,
-                environment: {
-                    ChatSidePanelEnvironment(insets: UIEdgeInsets(
-                        top: 0.0,
-                        left: leftPanelLeftInset,
-                        bottom: 0.0,
-                        right: 0.0
-                    ))
-                },
-                containerSize: CGSize(width: defaultLeftPanelWidth, height: layout.size.height - sidePanelTopInset - (containerInsets.bottom + inputPanelsHeight))
-            )
-            transition.updateFrame(view: dismissedLeftPanelView, frame: CGRect(origin: CGPoint(x: -layout.safeInsets.left - dismissedLeftPanelSize.width - 16.0, y: sidePanelTopInset), size: dismissedLeftPanelSize), completion: { [weak dismissedLeftPanelView] _ in
-                dismissedLeftPanelView?.removeFromSuperview()
-            })*/
-            dismissedFloatingTopicsPanelView.removeFromSuperview()
+            transition.updateFrame(view: dismissedFloatingTopicsPanelView, frame: dismissedFloatingTopicsPanelView.frame.offsetBy(dx: -dismissedFloatingTopicsPanelView.frame.minX - 100.0, dy: 0.0), completion: { [weak dismissedFloatingTopicsPanelView] _ in
+                dismissedFloatingTopicsPanelView?.removeFromSuperview()
+            })
         }
         
         transition.updateFrame(node: self.contentDimNode, frame: CGRect(origin: CGPoint(x: 0.0, y: 0.0), size: CGSize(width: layout.size.width, height: apparentInputBackgroundFrame.origin.y)))
@@ -3768,13 +3807,12 @@ class ChatControllerNode: ASDisplayNode, ASScrollViewDelegate {
         }
     }
     
-    func updateChatPresentationInterfaceState(_ chatPresentationInterfaceState: ChatPresentationInterfaceState, transition: ContainedViewLayoutTransition, interactive: Bool, completion: @escaping (ContainedViewLayoutTransition) -> Void) {
+    func updateChatPresentationInterfaceState(_ chatPresentationInterfaceState: ChatPresentationInterfaceState, transition: ContainedViewLayoutTransition, interactive: Bool, forceLayout: Bool, completion: @escaping (ContainedViewLayoutTransition) -> Void) {
         // Nicegram AiShortcuts
         aiShortcutsModel.onChangeText(
             chatPresentationInterfaceState.interfaceState.effectiveInputState.inputText.string
         )
         //
-        
         self.selectedMessages = chatPresentationInterfaceState.interfaceState.selectionState?.selectedIds
         
         var textStateUpdated = false
@@ -3790,7 +3828,7 @@ class ChatControllerNode: ASDisplayNode, ASScrollViewDelegate {
         
         let presentationReadyUpdated = self.chatPresentationInterfaceState.presentationReady != chatPresentationInterfaceState.presentationReady
         
-        if (self.chatPresentationInterfaceState != chatPresentationInterfaceState && chatPresentationInterfaceState.presentationReady) || textStateUpdated {
+        if (self.chatPresentationInterfaceState != chatPresentationInterfaceState && chatPresentationInterfaceState.presentationReady) || textStateUpdated || forceLayout {
             self.onLayoutCompletions.append(completion)
             
             let themeUpdated = presentationReadyUpdated || (self.chatPresentationInterfaceState.theme !== chatPresentationInterfaceState.theme)
@@ -4033,6 +4071,12 @@ class ChatControllerNode: ASDisplayNode, ASScrollViewDelegate {
     }
     
     func dismissInput(view: UIView? = nil, location: CGPoint? = nil) {
+        if self.context.sharedContext.immediateExperimentalUISettings.debugRipple {
+            if let view, let location {
+                self.wrappingNode.triggerRipple(at: view.convert(location, to: self.view))
+            }
+        }
+        
         if let _ = self.chatPresentationInterfaceState.inputTextPanelState.mediaRecordingState {
             return
         }
@@ -4992,6 +5036,7 @@ class ChatControllerNode: ASDisplayNode, ASScrollViewDelegate {
                 }
                 
                 var targetThreadId: Int64?
+                var clearMainThreadForward = false
                 if self.chatLocation.threadId == nil, let user = self.chatPresentationInterfaceState.renderedPeer?.peer as? TelegramUser, let botInfo = user.botInfo, botInfo.flags.contains(.hasForum), botInfo.flags.contains(.forumManagedByUser) {
                     if let message = messages.first {
                         switch message {
@@ -5004,7 +5049,12 @@ class ChatControllerNode: ASDisplayNode, ASScrollViewDelegate {
                                 targetThreadId = EngineMessage.newTopicThreadId
                             }
                         case let .forward(_, threadId, _, _, _):
-                            targetThreadId = threadId
+                            if let threadId {
+                                targetThreadId = threadId
+                            } else {
+                                targetThreadId = EngineMessage.newTopicThreadId
+                                clearMainThreadForward = true
+                            }
                         }
                     }
                 }
@@ -5015,8 +5065,12 @@ class ChatControllerNode: ASDisplayNode, ASScrollViewDelegate {
                         guard let self else {
                             return
                         }
-                        let _ = self
                         doSend(targetThreadId)
+                        if clearMainThreadForward, let peerId {
+                            let _ = ChatInterfaceState.update(engine: self.context.engine, peerId: peerId, threadId: nil, { current in
+                                return current.withUpdatedForwardMessageIds(nil)
+                            }).startStandalone()
+                        }
                     })
                 } else {
                     doSend(nil)
@@ -5396,6 +5450,12 @@ class ChatControllerNode: ASDisplayNode, ASScrollViewDelegate {
             leftIndex = floatingTopicsPanelView.topicIndex(threadId: fromLocation)
             rightIndex = floatingTopicsPanelView.topicIndex(threadId: toLocation)
         }
+        if leftIndex == nil || rightIndex == nil {
+            if let headerPanelsComponentView = self.headerPanelsView?.view as? HeaderPanelContainerComponent.View, let topicsPanelView = headerPanelsComponentView.panel(forKey: AnyHashable("topics")) as? ChatTopicsHeaderPanelComponent.View {
+                leftIndex = topicsPanelView.topicIndex(threadId: fromLocation)
+                rightIndex = topicsPanelView.topicIndex(threadId: toLocation)
+            }
+        }
         guard let leftIndex, let rightIndex else {
             return nil
         }
@@ -5404,6 +5464,9 @@ class ChatControllerNode: ASDisplayNode, ASScrollViewDelegate {
     
     func createHistoryNodeForChatLocation(chatLocation: ChatLocation, chatLocationContextHolder: Atomic<ChatLocationContextHolder?>) -> ChatHistoryListNodeImpl {
         let historyNode = ChatHistoryListNodeImpl(
+            // Nicegram
+            nicegramContext: self.nicegramContext,
+            //
             context: self.context,
             updatedPresentationData: self.controller?.updatedPresentationData ?? (self.context.sharedContext.currentPresentationData.with({ $0 }), self.context.sharedContext.presentationData),
             chatLocation: chatLocation,
