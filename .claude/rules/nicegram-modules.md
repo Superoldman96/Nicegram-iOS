@@ -1,7 +1,6 @@
 ---
-description: Nicegram in-repo modules (Nicegram/**) — NGUtils, structure, resources
-globs: Nicegram/**
-alwaysApply: false
+paths:
+  - "Nicegram/**"
 ---
 
 # Nicegram in-repo modules (`Nicegram/**`)
@@ -15,7 +14,8 @@ not here.**
 - Prefer `nicegram-assistant-ios` for new self-contained features.
 - Add here only for code that must sit next to Telegram — in practice **`NGUtils`**:
   utilities over Telegram types (entity mapping, media helpers, formatting) and
-  **`TelegramBridge` implementations** the assistant consumes (see `AGENTS.md`).
+  **`TelegramBridge` implementations** the assistant consumes (see
+  `NICEGRAM-AGENTS.md`).
 - Only create a new `NG*` module with strong reason — extend `NGUtils` or an
   existing module first.
 - Each module is a Bazel/BUCK target (`BUILD`/`BUCK`): add new files and deps to

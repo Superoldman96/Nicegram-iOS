@@ -7,7 +7,6 @@ extension User {
         user: TelegramUser,
         botInfo: BotUserInfo,
         botInfoDetails: BotInfo?,
-        icon: String?,
         langCode: String?
     ) -> User {
         let botFlags = botInfo.flags
@@ -48,7 +47,6 @@ extension User {
         
         return User(
             id: user.id.ng_toInt64(),
-            icon: icon,
             payload: payload
         )
     }

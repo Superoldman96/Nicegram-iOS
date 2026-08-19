@@ -57,9 +57,15 @@ Bazel (`BUILD` files; some legacy `BUCK` remain), not hand-managed SPM/Xcode.
 When you add a source file or dependency, update that module's build target. Do
 not hand-edit generated files.
 
-## Detailed conventions (`.cursor/rules/`, auto-attached by path)
+## Detailed conventions (`.claude/rules/`, auto-attached by path)
 
-- `telegram-interop.mdc` — editing `submodules/**`: marker syntax + SSignalKit
+- `telegram-interop.md` — editing `submodules/**`: marker syntax + SSignalKit
   bridges.
-- `nicegram-modules.mdc` — `Nicegram/**` modules, `NGUtils`, resources.
-- `swift-conventions.mdc` — Swift style for our code.
+- `nicegram-modules.md` — `Nicegram/**` modules, `NGUtils`, resources.
+- `swift-conventions.md` — Swift style for our code.
+
+`CLAUDE.md` at the repo root is upstream Telegram's own file, not ours. It stays
+the authority on the Bazel build, the embedded watch app, the Postbox →
+TelegramEngine refactor and the tgcalls testbench. This file covers only what the
+fork adds, and is pulled into Claude Code by a marked two-line import at the top
+of `CLAUDE.md`.

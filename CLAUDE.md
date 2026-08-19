@@ -1,3 +1,6 @@
+<!-- Nicegram AI rules -->
+@NICEGRAM-AGENTS.md
+
 # CLAUDE.md
 
 This file provides guidance to AI assistants when working with code in this repository.

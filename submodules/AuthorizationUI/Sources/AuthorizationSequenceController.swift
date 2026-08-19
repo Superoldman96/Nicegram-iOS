@@ -1254,10 +1254,7 @@ public final class AuthorizationSequenceController: NavigationController, ASAuth
             case .authorized:
                 analyticsManager.trackEvent(
                     AnalyticsEvent(
-                        "nicegram_tgauth_success",
-                        providers: .init(
-                            adjust: .init(token: "392g3r")
-                        )
+                        "nicegram_tgauth_success"
                     )
                 )
             case let .state(state):

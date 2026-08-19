@@ -1,7 +1,7 @@
 ---
-description: Swift style for Nicegram code (style, formatting, polymorphism, errors)
-globs: Nicegram/**/*.swift,submodules/**/Nicegram/**/*.swift
-alwaysApply: false
+paths:
+  - "Nicegram/**/*.swift"
+  - "submodules/**/Nicegram/**/*.swift"
 ---
 
 # Swift conventions (Nicegram code)

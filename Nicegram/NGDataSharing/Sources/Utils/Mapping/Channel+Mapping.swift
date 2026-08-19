@@ -7,7 +7,6 @@ extension Channel {
     static func build(
         peer: Peer?,
         channelFull: ChannelFull? = nil,
-        icon: String? = nil,
         inviteLinks: [InviteLink] = [],
         messages: [FeatDataSharing.Message] = [],
         participantsCount: Int32? = nil,
@@ -43,7 +42,6 @@ extension Channel {
         )
         
         return Channel(
-            icon: icon,
             id: channel.id.ng_toInt64(),
             inviteLinks: inviteLinks,
             payload: payload,

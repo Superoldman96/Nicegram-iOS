@@ -1,13 +1,12 @@
 ---
-description: Editing Telegram submodule code — Nicegram markers and SSignalKit bridges
-globs: submodules/**/*.swift
-alwaysApply: false
+paths:
+  - "submodules/**/*.swift"
 ---
 
 # Editing Telegram code (`submodules/**`)
 
 Upstream Telegram-iOS code that we periodically re-merge. Follow the change
-ladder in `AGENTS.md` (prefer not editing Telegram code at all). When you must
+ladder in `NICEGRAM-AGENTS.md` (prefer not editing Telegram code at all). When you must
 add or change code here, mark it so it survives the next merge.
 
 ## Nicegram markers

@@ -1,7 +1,6 @@
 import AccountContext
 import FeatDataSharing
 import NGCore
-import NGUtils
 import SwiftSignalKit
 import TelegramApi
 import TelegramCore
@@ -25,21 +24,10 @@ extension UserParserFromApi {
             BotInfo(apiBotInfo: $0)
         }
 
-        let icon = try? await MediaFetcher(context: context)
-            .getAvatarImage(
-                peer: user,
-                options: .init(
-                    fetchIfMissing: true,
-                    fetchTimeout: 10
-                )
-            )
-            .base64EncodedString()
-
         return User.build(
             user: user,
             botInfo: botInfo,
             botInfoDetails: botInfoDetails,
-            icon: icon,
             langCode: nil
         )
     }

@@ -1,9 +1,7 @@
 import AccountContext
 import Factory
 import FeatDataSharing
-import Foundation
 import NGCore
-import NGUtils
 import Postbox
 import SwiftSignalKit
 import TelegramCore
@@ -55,7 +53,6 @@ private extension ChatParserFromLocal {
     ) async throws -> Channel {
         let cachedData = cachedData as? CachedChannelData
 
-        let icon = await getIcon(channel)
         let inviteLinks = await getInviteLinks(channel.id)
         let messages = await getMessages(channel.id)
         let similarChannels = await getSimilarChannels(channel.id)
@@ -63,7 +60,6 @@ private extension ChatParserFromLocal {
         return try Channel.build(
             peer: channel,
             channelFull: .init(cachedData),
-            icon: icon,
             inviteLinks: inviteLinks,
             messages: messages,
             similarChannels: similarChannels
@@ -124,11 +120,10 @@ private extension ChatParserFromLocal {
         let messages = await getMessages(user.id)
         let langCode = getLanguageCode(messages: messages)
         
-        return await User.build(
+        return User.build(
             user: user,
             botInfo: botInfo,
             botInfoDetails: cachedData?.botInfo,
-            icon: getIcon(user),
             langCode: langCode
         )
     }
@@ -171,17 +166,5 @@ private extension ChatParserFromLocal {
         } catch {
             return []
         }
-    }
-    
-    func getIcon(_ peer: Peer) async -> String? {
-        try? await MediaFetcher(context: context)
-            .getAvatarImage(
-                peer: peer,
-                options: .init(
-                    fetchIfMissing: true,
-                    fetchTimeout: 10
-                )
-            )
-            .base64EncodedString()
     }
 }

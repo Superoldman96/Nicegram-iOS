@@ -1,9 +1,7 @@
 import AccountContext
 import Factory
 import FeatDataSharing
-import Foundation
 import NGCore
-import NGUtils
 import TelegramApi
 import TelegramCore
 
@@ -28,14 +26,11 @@ extension ChannelParserFromApi {
         
         let messages = (try? await getLastMessages(channel)) ?? []
         
-        let icon = try? await getChatPhotoData(channel).base64EncodedString()
-        
         let recommendedChannels = (try? await getSimilarChannels(channel)) ?? []
         
         return try Channel.build(
             peer: peer(with: apiChat),
             channelFull: .init(channelFull),
-            icon: icon,
             inviteLinks: .init(channelFull.exportedInvite),
             messages: messages,
             participantsCount: channel.participantsCount,
@@ -134,35 +129,6 @@ private extension ChannelParserFromApi {
         var resultMessages = [Message](messages: messages, chats: chats, users: users)
         resultMessages.reverse()
         return resultMessages
-    }
-    
-    func getChatPhotoData(
-        _ channel: Api.Chat.Cons_channel
-    ) async throws -> Data {
-        guard case let .chatPhoto(chatPhoto) = channel.photo else {
-            throw UnexpectedError()
-        }
-        
-        let url = try await ApiMediaFetcher(context: context)
-            .fetch(
-                datacenterId: Int(chatPhoto.dcId),
-                location: .inputPeerPhotoFileLocation(
-                    .init(
-                        flags: chatPhoto.flags,
-                        peer: .inputPeerChannel(
-                            .init(
-                                channelId: channel.id,
-                                accessHash: channel.accessHash ?? 0
-                            )
-                        ),
-                        photoId: chatPhoto.photoId
-                    )
-                )
-            )
-        defer {
-            try? FileManager.default.removeItem(at: url)
-        }
-        return try Data(contentsOf: url)
     }
     
     func getSimilarChannels(

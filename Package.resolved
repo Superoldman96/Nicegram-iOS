@@ -10,15 +10,6 @@
       }
     },
     {
-      "identity" : "adjust_signature_sdk",
-      "kind" : "remoteSourceControl",
-      "location" : "https://github.com/adjust/adjust_signature_sdk.git",
-      "state" : {
-        "revision" : "8af71c556087b2f6cc35b70f0076b944b1b38e44",
-        "version" : "3.67.0"
-      }
-    },
-    {
       "identity" : "app-check",
       "kind" : "remoteSourceControl",
       "location" : "https://github.com/google/app-check.git",
@@ -113,8 +104,8 @@
       "kind" : "remoteSourceControl",
       "location" : "https://github.com/firebase/firebase-ios-sdk.git",
       "state" : {
-        "revision" : "9ab4a7e6e5d6d3df2a2aa002a11d25e078c8d6e5",
-        "version" : "12.16.0"
+        "revision" : "33a468adfdb75b53f05a37e7c886ca7c962b5c17",
+        "version" : "12.17.0"
       }
     },
     {
@@ -122,8 +113,8 @@
       "kind" : "remoteSourceControl",
       "location" : "https://github.com/scenee/FloatingPanel",
       "state" : {
-        "revision" : "7efcc769e0ffe62f530e9276ab26309f758b7cc3",
-        "version" : "3.2.2"
+        "revision" : "3803821e04bae3647c434495fab44fdd33cf7368",
+        "version" : "3.2.3"
       }
     },
     {
@@ -140,8 +131,8 @@
       "kind" : "remoteSourceControl",
       "location" : "https://github.com/google/GoogleAppMeasurement.git",
       "state" : {
-        "revision" : "ce606e3768abddff0510783e1a6d2f270b943b35",
-        "version" : "12.16.0"
+        "revision" : "fceaffa07d22dcd5624d3639fd970351a4a5ad8c",
+        "version" : "12.17.0"
       }
     },
     {
@@ -149,8 +140,8 @@
       "kind" : "remoteSourceControl",
       "location" : "https://github.com/google/GoogleDataTransport.git",
       "state" : {
-        "revision" : "617af071af9aa1d6a091d59a202910ac482128f9",
-        "version" : "10.1.0"
+        "revision" : "ba3358d3c3dbae8ef230b58a46b97ad65e84e974",
+        "version" : "10.1.1"
       }
     },
     {
@@ -185,8 +176,8 @@
       "kind" : "remoteSourceControl",
       "location" : "https://github.com/google/gtm-session-fetcher.git",
       "state" : {
-        "revision" : "c0ac7575d70050c2973ba2318bd5af47f8e8153a",
-        "version" : "5.3.0"
+        "revision" : "724a52eea6329b7e12d3ad8300d76ca9f3895fcc",
+        "version" : "5.3.1"
       }
     },
     {
@@ -205,15 +196,6 @@
       "state" : {
         "revision" : "040d087ac2267d2ddd4cca36c757d1c6a05fdbfe",
         "version" : "101.0.0"
-      }
-    },
-    {
-      "identity" : "ios_sdk",
-      "kind" : "remoteSourceControl",
-      "location" : "https://github.com/adjust/ios_sdk.git",
-      "state" : {
-        "revision" : "ff8a74823dc020b09f08b670735e24ccbcb5095a",
-        "version" : "5.7.0"
       }
     },
     {
@@ -276,7 +258,7 @@
       "location" : "git@bitbucket.org:mobyrix/nicegram-assistant-ios.git",
       "state" : {
         "branch" : "develop",
-        "revision" : "13970d9317a7abdfbb973af76f680157a224e215"
+        "revision" : "5cd4650f1a624e88d1d3d8080141da5147641717"
       }
     },
     {
@@ -302,8 +284,8 @@
       "kind" : "remoteSourceControl",
       "location" : "https://github.com/qonversion/qonversion-ios-sdk.git",
       "state" : {
-        "revision" : "069ec229251b8ec1642b96e004568a2ec0cfb1af",
-        "version" : "6.12.1"
+        "revision" : "eb5641d08978633d903c80e29ac7c1f84a4fdcdb",
+        "version" : "6.14.0"
       }
     },
     {
@@ -338,8 +320,8 @@
       "kind" : "remoteSourceControl",
       "location" : "https://github.com/rive-app/rive-ios.git",
       "state" : {
-        "revision" : "c8252fe1f774c4b807d656621d1f93df6c5b92aa",
-        "version" : "6.21.1"
+        "revision" : "a1dffeec37e8bd7698694f765b9bf1768f1a3fe5",
+        "version" : "6.22.1"
       }
     },
     {
@@ -365,8 +347,8 @@
       "kind" : "remoteSourceControl",
       "location" : "https://github.com/getsentry/sentry-cocoa.git",
       "state" : {
-        "revision" : "53eb9bd5da18e208cfd80e86863d3f4c7ba21b1d",
-        "version" : "9.21.0"
+        "revision" : "cd213f98af160e6497eeff0707bc3f6a205b159c",
+        "version" : "9.26.0"
       }
     },
     {
@@ -617,8 +599,8 @@
       "kind" : "remoteSourceControl",
       "location" : "https://github.com/trustwallet/wallet-core.git",
       "state" : {
-        "revision" : "e231585e2850443009e33f68b49486a5a6ea6337",
-        "version" : "4.7.0"
+        "revision" : "cf4d0ad2344bdb4412004bbdcedf502d4c4d4f17",
+        "version" : "4.7.3"
       }
     },
     {
